@@ -1,0 +1,14 @@
+# Ignore virtual environment
+venv/
+
+# Ignore large dataset files
+dataset/
+
+# Ignore model files
+*.h5
+*.zip
+*.csv
+
+# Ignore unnecessary logs and system files
+*.log
+*.DS_Store

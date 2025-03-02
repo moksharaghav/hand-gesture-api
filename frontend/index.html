@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Gesture Recognition</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { border: 2px solid black; width: 50%; }
+        canvas { display: none; }
+        #result { font-size: 20px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Hand Gesture Recognition</h1>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    <p id="result">Prediction: Waiting...</p>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const result = document.getElementById('result');
+        const context = canvas.getContext('2d');
+
+        // Access webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => console.error("Error accessing webcam:", err));
+
+        // Capture frame and send to Flask API
+        function captureAndSendFrame() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg').split(',')[1];
+
+            fetch("http://127.0.0.1:10000/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    result.innerText = "Error: " + data.error;
+                } else if (data.gesture === "No hand detected") {
+                    result.innerText = "No hand detected"; // Show correct message
+                } else {
+                    result.innerText = `Gesture: ${data.gesture} (${data.confidence.toFixed(2)}%)`;
+                }
+            })
+
+            .catch(err => console.error("Error sending frame:", err));
+        }
+
+        // Send frames every second
+        setInterval(captureAndSendFrame, 1000);
+    </script>
+</body>
+</html>
